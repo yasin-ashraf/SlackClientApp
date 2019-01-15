@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">SlackChat</string>
+    <string name="noti_channel_notif_service">Slack chat notification</string>
 </resources>
