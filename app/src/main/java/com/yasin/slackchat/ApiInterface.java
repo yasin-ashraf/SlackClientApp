@@ -12,5 +12,5 @@ import retrofit2.http.Query;
 public interface ApiInterface {
 
     @GET("rtm.connect/")
-    Call<RTMConnect> getOTP (@Query("token") String token);
+    Call<RTMConnect> getWebSocketUrl(@Query("token") String token);
 }

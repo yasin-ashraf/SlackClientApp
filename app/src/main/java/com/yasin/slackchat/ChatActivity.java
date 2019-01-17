@@ -1,10 +1,14 @@
 package com.yasin.slackchat;
 
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 
 import com.yasin.slackchat.Model.RTMConnect;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -18,19 +22,21 @@ public class ChatActivity extends AppCompatActivity {
 
     private WebSocket webSocket;
     private String webSocketUrl;
+    private SessionManager sessionManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        sessionManager = new SessionManager(this);
         setContentView(R.layout.activity_chat);
         beginSession();
     }
 
     private void beginSession() {
 
-        ApiUtils.getServices().getOTP("xoxp-362211397057-521186169604-523734175124-6463eb5c195f13390baeaae879e26c05").enqueue(new Callback<RTMConnect>() {
+        ApiUtils.getServices().getWebSocketUrl("token goes here").enqueue(new Callback<RTMConnect>() {
             @Override
-            public void onResponse(Call<RTMConnect> call, retrofit2.Response<RTMConnect> response) {
+            public void onResponse(@NonNull Call<RTMConnect> call, @NonNull retrofit2.Response<RTMConnect> response) {
                 if(response.isSuccessful()){
                     RTMConnect rtmConnect = response.body();
                     if(rtmConnect.getOk()){
@@ -41,7 +47,7 @@ public class ChatActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<RTMConnect> call, Throwable t) {
+            public void onFailure(@NonNull Call<RTMConnect> call, @NonNull Throwable t) {
 
             }
         });
@@ -82,8 +88,22 @@ public class ChatActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        webSocket.close(3000,"Close Chat");
+        if(webSocket != null){
+            webSocket.close(3000,"Close Chat");
+        }
         Log.d("WEBSOCKET","CLOSED");
         super.onDestroy();
+    }
+
+    private void onMessageReceived(String text) {
+        JSONObject obj = null;
+        try {
+            obj = new JSONObject(text);
+            String type = obj.getString("type");
+            String channel = obj.getString("channel");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
     }
 }
