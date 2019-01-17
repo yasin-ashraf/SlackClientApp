@@ -1,11 +1,18 @@
-package com.yasin.slackchat;
+package com.yasin.slackchat.Activity;
 
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.ImageButton;
+import android.widget.ProgressBar;
+import android.widget.ViewFlipper;
 
+import com.yasin.slackchat.ApiUtils;
 import com.yasin.slackchat.Model.RTMConnect;
+import com.yasin.slackchat.R;
+import com.yasin.slackchat.SessionManager;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -23,17 +30,26 @@ public class ChatActivity extends AppCompatActivity {
     private WebSocket webSocket;
     private String webSocketUrl;
     private SessionManager sessionManager;
+    private ViewFlipper viewFlipper;
+    private ImageButton sendButton;
+    private ProgressBar progressBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         sessionManager = new SessionManager(this);
         setContentView(R.layout.activity_chat);
+        initViews();
         beginSession();
     }
 
-    private void beginSession() {
+    private void initViews() {
+        viewFlipper = findViewById(R.id.viewFlipper);
+        sendButton = findViewById(R.id.button_send);
+        progressBar = findViewById(R.id.progressBar);
+    }
 
+    private void beginSession() {
         ApiUtils.getServices().getWebSocketUrl("token goes here").enqueue(new Callback<RTMConnect>() {
             @Override
             public void onResponse(@NonNull Call<RTMConnect> call, @NonNull retrofit2.Response<RTMConnect> response) {
@@ -67,6 +83,7 @@ public class ChatActivity extends AppCompatActivity {
         public void onOpen(WebSocket webSocket, Response response) {
             super.onOpen(webSocket, response);
             Log.d("WEBSOCKET","OPENED");
+            progressBar.setVisibility(View.INVISIBLE);
         }
 
         @Override
