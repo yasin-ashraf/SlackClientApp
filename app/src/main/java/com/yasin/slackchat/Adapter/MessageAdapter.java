@@ -32,6 +32,10 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         this.sessionManager = new SessionManager(context);
     }
 
+    public void setMessages(List<Message> messages) {
+        this.messages = messages;
+    }
+
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
@@ -80,12 +84,12 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     @Override
     public int getItemViewType(int position) {
         Message m = messages.get(position);
-        if(m.getUser().equals(sessionManager.getSelfUserId()))
+        if(m.getUser() != null && m.getUser().equals(sessionManager.getSelfUserId()))
             return 0;
-        else if(m.getClientMsgId() != null || m.getSubtype() != null && m.getSubtype().equals("me_message"))
-            return 1;
-        else
+        else if(m.getSubtype() != null && !m.getSubtype().equals("me_message"))
             return 2;
+        else
+            return 1;
     }
 
     class SelfMessageViewHolder extends RecyclerView.ViewHolder {

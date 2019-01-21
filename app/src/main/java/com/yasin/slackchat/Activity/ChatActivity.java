@@ -13,6 +13,7 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.ViewFlipper;
 
+import com.yasin.slackchat.Adapter.ChannelsAdapter;
 import com.yasin.slackchat.Adapter.MessageAdapter;
 import com.yasin.slackchat.ApiUtils;
 import com.yasin.slackchat.Database.DatabaseClient;
@@ -41,7 +42,7 @@ import okhttp3.WebSocketListener;
 import retrofit2.Call;
 import retrofit2.Callback;
 
-public class ChatActivity extends AppCompatActivity {
+public class ChatActivity extends AppCompatActivity implements ChannelsAdapter.ChannelSelectedListener {
 
     private WebSocket webSocket;
     private String webSocketUrl;
@@ -52,6 +53,8 @@ public class ChatActivity extends AppCompatActivity {
     private CoordinatorLayout snackBarView;
     private Snackbar snackbar;
     private RecyclerView messageRecyclerView;
+    private RecyclerView channelsRecyclerView;
+    private MessageAdapter messageAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,7 +71,9 @@ public class ChatActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
         snackBarView = findViewById(R.id.snackBarView);
         messageRecyclerView = findViewById(R.id.rv_chat);
+        channelsRecyclerView = findViewById(R.id.rv_channels);
         messageRecyclerView.setLayoutManager(new LinearLayoutManager(this,LinearLayoutManager.VERTICAL,true));
+        channelsRecyclerView.setLayoutManager(new LinearLayoutManager(this,LinearLayoutManager.HORIZONTAL,false));
 
         sendButton.setOnClickListener(sendButtonClickListener);
     }
@@ -110,6 +115,9 @@ public class ChatActivity extends AppCompatActivity {
                 if(response.isSuccessful()){
                     Channels channels = response.body();
                     if(channels.getOk()){
+                        ChannelsAdapter channelsAdapter = new ChannelsAdapter(channels.getChannels());
+                        channelsAdapter.setChannelSelectedListener(ChatActivity.this);
+                        channelsRecyclerView.setAdapter(channelsAdapter);
                         for(Channel channel : channels.getChannels()){
                             SlackChat.getApp().getExecutor().execute(() ->
                                     DatabaseClient.getInstance(ChatActivity.this).getAppDatabase().channelsDao().saveChannels(channel));
@@ -139,6 +147,11 @@ public class ChatActivity extends AppCompatActivity {
                     snackbar.show();
             }
         });
+    }
+
+    @Override
+    public void onChannelSelected(String channelId) {
+        getChannelHistory(channelId);
     }
 
     private void getAllUsers() {
@@ -178,14 +191,21 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private void getChannelHistory(String channelId) {
+        progressBar.setVisibility(View.VISIBLE);
         ApiUtils.getServices().getChannelHistory(sessionManager.getApiToken(),channelId).enqueue(new Callback<History>() {
             @Override
             public void onResponse(Call<History> call, retrofit2.Response<History> response) {
                 if(response.isSuccessful()) {
                     History history = response.body();
                     List<Message> messages = history.getMessages();
-                    MessageAdapter messageAdapter = new MessageAdapter(messages,ChatActivity.this);
-                    messageRecyclerView.setAdapter(messageAdapter);
+                    if(messageAdapter == null){
+                        messageAdapter = new MessageAdapter(messages,ChatActivity.this);
+                        messageRecyclerView.setAdapter(messageAdapter);
+                    }else {
+                        messageAdapter.setMessages(messages);
+                        messageRecyclerView.setAdapter(messageAdapter);
+                    }
+                    progressBar.setVisibility(View.INVISIBLE);
                 }
             }
 
@@ -210,7 +230,6 @@ public class ChatActivity extends AppCompatActivity {
         public void onOpen(WebSocket webSocket, Response response) {
             super.onOpen(webSocket, response);
             Log.d("WEBSOCKET","OPENED");
-            progressBar.setVisibility(View.INVISIBLE);
         }
 
         @Override
