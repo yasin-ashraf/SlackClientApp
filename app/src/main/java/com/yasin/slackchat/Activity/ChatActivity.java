@@ -5,18 +5,24 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.ViewFlipper;
 
+import com.yasin.slackchat.Adapter.MessageAdapter;
 import com.yasin.slackchat.ApiUtils;
 import com.yasin.slackchat.Database.DatabaseClient;
 import com.yasin.slackchat.Model.Channel;
 import com.yasin.slackchat.Model.Channels;
+import com.yasin.slackchat.Model.History;
 import com.yasin.slackchat.Model.Member;
+import com.yasin.slackchat.Model.Message;
 import com.yasin.slackchat.Model.RTMConnect;
+import com.yasin.slackchat.Model.Self;
 import com.yasin.slackchat.Model.Users;
 import com.yasin.slackchat.R;
 import com.yasin.slackchat.SessionManager;
@@ -24,6 +30,8 @@ import com.yasin.slackchat.SlackChat;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.List;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -43,6 +51,7 @@ public class ChatActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private CoordinatorLayout snackBarView;
     private Snackbar snackbar;
+    private RecyclerView messageRecyclerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +67,8 @@ public class ChatActivity extends AppCompatActivity {
         sendButton = findViewById(R.id.button_send);
         progressBar = findViewById(R.id.progressBar);
         snackBarView = findViewById(R.id.snackBarView);
+        messageRecyclerView = findViewById(R.id.rv_chat);
+        messageRecyclerView.setLayoutManager(new LinearLayoutManager(this,LinearLayoutManager.VERTICAL,true));
 
         sendButton.setOnClickListener(sendButtonClickListener);
     }
@@ -70,6 +81,8 @@ public class ChatActivity extends AppCompatActivity {
                     RTMConnect rtmConnect = response.body();
                     if(rtmConnect.getOk()){
                         webSocketUrl = rtmConnect.getUrl();
+                        Self self = rtmConnect.getSelf();
+                        sessionManager.setSelfUserId(self.getId());
                         startWebSocket(webSocketUrl);
                         getAllChannels();
                         getAllUsers();
@@ -100,8 +113,9 @@ public class ChatActivity extends AppCompatActivity {
                         for(Channel channel : channels.getChannels()){
                             SlackChat.getApp().getExecutor().execute(() ->
                                     DatabaseClient.getInstance(ChatActivity.this).getAppDatabase().channelsDao().saveChannels(channel));
-                        }
 
+                        }
+                        getChannelHistory(channels.getChannels().get(0).getId());
                     }
                 }else {
                     snackbar = Snackbar.make(snackBarView,getString(R.string.fetching_channels_failed),Snackbar.LENGTH_INDEFINITE);
@@ -163,6 +177,25 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
+    private void getChannelHistory(String channelId) {
+        ApiUtils.getServices().getChannelHistory(sessionManager.getApiToken(),channelId).enqueue(new Callback<History>() {
+            @Override
+            public void onResponse(Call<History> call, retrofit2.Response<History> response) {
+                if(response.isSuccessful()) {
+                    History history = response.body();
+                    List<Message> messages = history.getMessages();
+                    MessageAdapter messageAdapter = new MessageAdapter(messages,ChatActivity.this);
+                    messageRecyclerView.setAdapter(messageAdapter);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<History> call, Throwable t) {
+
+            }
+        });
+    }
+
     private void startWebSocket(String webSocketUrl) {
         OkHttpClient client = new OkHttpClient();;
         Request request = new Request.Builder().url(webSocketUrl).build();
@@ -216,6 +249,7 @@ public class ChatActivity extends AppCompatActivity {
             obj = new JSONObject(text);
             String type = obj.getString("type");
             String channel = obj.getString("channel");
+
         } catch (JSONException e) {
             e.printStackTrace();
         }

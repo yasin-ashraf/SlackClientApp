@@ -13,7 +13,8 @@ public class SessionManager {
     private static final String IS_FIRST_USE = "IsFirstUse";
     private static final String IS_FIRST_DATA_LOADED = "IsFirstDataLoaded";
     private static final String WEBSOCKET_URL = "websocketUrl"; // change this
-    private static final String SLACK_TOKEN = "apiToken"; // change this
+    private static final String SLACK_TOKEN = "apiToken";
+    private static final String SELF_USER_ID = "selfUser";
 
     private SharedPreferences pref;
     private SharedPreferences.Editor editor;
@@ -61,5 +62,13 @@ public class SessionManager {
         return pref.getString(SLACK_TOKEN,"");
     }
 
+    public void setSelfUserId(String s){
+        editor.putString(SELF_USER_ID,s);
+        editor.commit();
+    }
+
+    public String getSelfUserId(){
+        return pref.getString(SELF_USER_ID,"");
+    }
 }
 
