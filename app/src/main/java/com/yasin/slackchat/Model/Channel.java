@@ -1,69 +1,94 @@
 package com.yasin.slackchat.Model;
 
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.PrimaryKey;
+import android.arch.persistence.room.TypeConverters;
+import android.support.annotation.NonNull;
+
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import com.yasin.slackchat.Database.Converter;
 
 import java.util.List;
 
 /**
  * Created by im_yasinashraf started on 20/1/19.
  */
+@Entity
 public class Channel {
 
+    @PrimaryKey
     @SerializedName("id")
     @Expose
+    @NonNull
     private String id;
+
     @SerializedName("name")
     @Expose
+
     private String name;
+
     @SerializedName("is_channel")
     @Expose
     private Boolean isChannel;
+
     @SerializedName("created")
     @Expose
     private Integer created;
+
     @SerializedName("is_archived")
     @Expose
     private Boolean isArchived;
+
     @SerializedName("is_general")
     @Expose
     private Boolean isGeneral;
+
     @SerializedName("unlinked")
     @Expose
     private Integer unlinked;
+
     @SerializedName("creator")
     @Expose
     private String creator;
+
     @SerializedName("name_normalized")
     @Expose
     private String nameNormalized;
+
     @SerializedName("is_shared")
     @Expose
     private Boolean isShared;
+
     @SerializedName("is_org_shared")
     @Expose
     private Boolean isOrgShared;
+
     @SerializedName("is_member")
     @Expose
     private Boolean isMember;
+
     @SerializedName("is_private")
     @Expose
     private Boolean isPrivate;
+
     @SerializedName("is_mpim")
     @Expose
     private Boolean isMpim;
+
+    @TypeConverters(Converter.class)
     @SerializedName("members")
     @Expose
     private List<String> members = null;
+
     @SerializedName("topic")
     @Expose
     private Topic topic;
+
     @SerializedName("purpose")
     @Expose
     private Purpose purpose;
-    @SerializedName("previous_names")
-    @Expose
-    private List<Object> previousNames = null;
+
     @SerializedName("num_members")
     @Expose
     private Integer numMembers;
@@ -202,14 +227,6 @@ public class Channel {
 
     public void setPurpose(Purpose purpose) {
         this.purpose = purpose;
-    }
-
-    public List<Object> getPreviousNames() {
-        return previousNames;
-    }
-
-    public void setPreviousNames(List<Object> previousNames) {
-        this.previousNames = previousNames;
     }
 
     public Integer getNumMembers() {

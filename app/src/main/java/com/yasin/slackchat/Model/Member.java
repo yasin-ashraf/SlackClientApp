@@ -1,67 +1,95 @@
 package com.yasin.slackchat.Model;
 
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.PrimaryKey;
+import android.arch.persistence.room.TypeConverters;
+import android.support.annotation.NonNull;
+
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import com.yasin.slackchat.Database.Converter;
 
 /**
  * Created by im_yasinashraf started on 20/1/19.
  */
+@Entity
 public class Member {
 
+    @PrimaryKey
     @SerializedName("id")
     @Expose
+    @NonNull
     private String id;
+
     @SerializedName("team_id")
     @Expose
     private String teamId;
+
     @SerializedName("name")
     @Expose
     private String name;
+
     @SerializedName("deleted")
     @Expose
     private Boolean deleted;
+
     @SerializedName("color")
     @Expose
     private String color;
+
     @SerializedName("real_name")
     @Expose
     private String realName;
+
     @SerializedName("tz")
     @Expose
-    private Object tz;
+    private String tz;
+
     @SerializedName("tz_label")
     @Expose
     private String tzLabel;
+
     @SerializedName("tz_offset")
     @Expose
     private Integer tzOffset;
+
     @SerializedName("profile")
     @Expose
+    @TypeConverters(Converter.class)
     private Profile profile;
+
     @SerializedName("is_admin")
     @Expose
     private Boolean isAdmin;
+
     @SerializedName("is_owner")
     @Expose
     private Boolean isOwner;
+
     @SerializedName("is_primary_owner")
     @Expose
     private Boolean isPrimaryOwner;
+
     @SerializedName("is_restricted")
     @Expose
     private Boolean isRestricted;
+
     @SerializedName("is_ultra_restricted")
     @Expose
     private Boolean isUltraRestricted;
+
     @SerializedName("is_bot")
     @Expose
     private Boolean isBot;
+
     @SerializedName("is_app_user")
     @Expose
     private Boolean isAppUser;
+
     @SerializedName("updated")
     @Expose
     private Integer updated;
+
     @SerializedName("has_2fa")
     @Expose
     private Boolean has2fa;
@@ -114,11 +142,11 @@ public class Member {
         this.realName = realName;
     }
 
-    public Object getTz() {
+    public String getTz() {
         return tz;
     }
 
-    public void setTz(Object tz) {
+    public void setTz(String tz) {
         this.tz = tz;
     }
 

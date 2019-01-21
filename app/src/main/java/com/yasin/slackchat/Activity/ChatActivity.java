@@ -1,8 +1,10 @@
 package com.yasin.slackchat.Activity;
 
-import android.support.annotation.NonNull;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.Snackbar;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
@@ -10,9 +12,15 @@ import android.widget.ProgressBar;
 import android.widget.ViewFlipper;
 
 import com.yasin.slackchat.ApiUtils;
+import com.yasin.slackchat.Database.DatabaseClient;
+import com.yasin.slackchat.Model.Channel;
+import com.yasin.slackchat.Model.Channels;
+import com.yasin.slackchat.Model.Member;
 import com.yasin.slackchat.Model.RTMConnect;
+import com.yasin.slackchat.Model.Users;
 import com.yasin.slackchat.R;
 import com.yasin.slackchat.SessionManager;
+import com.yasin.slackchat.SlackChat;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -33,6 +41,8 @@ public class ChatActivity extends AppCompatActivity {
     private ViewFlipper viewFlipper;
     private ImageButton sendButton;
     private ProgressBar progressBar;
+    private CoordinatorLayout snackBarView;
+    private Snackbar snackbar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,10 +57,13 @@ public class ChatActivity extends AppCompatActivity {
         viewFlipper = findViewById(R.id.viewFlipper);
         sendButton = findViewById(R.id.button_send);
         progressBar = findViewById(R.id.progressBar);
+        snackBarView = findViewById(R.id.snackBarView);
+
+        sendButton.setOnClickListener(sendButtonClickListener);
     }
 
     private void beginSession() {
-        ApiUtils.getServices().getWebSocketUrl("token goes here").enqueue(new Callback<RTMConnect>() {
+        ApiUtils.getServices().getWebSocketUrl(sessionManager.getApiToken()).enqueue(new Callback<RTMConnect>() {
             @Override
             public void onResponse(@NonNull Call<RTMConnect> call, @NonNull retrofit2.Response<RTMConnect> response) {
                 if(response.isSuccessful()){
@@ -58,13 +71,94 @@ public class ChatActivity extends AppCompatActivity {
                     if(rtmConnect.getOk()){
                         webSocketUrl = rtmConnect.getUrl();
                         startWebSocket(webSocketUrl);
+                        getAllChannels();
+                        getAllUsers();
                     }
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<RTMConnect> call, @NonNull Throwable t) {
+                snackbar = Snackbar.make(snackBarView,getString(R.string.something_went_wrong),Snackbar.LENGTH_INDEFINITE);
+                snackbar.setAction(getString(R.string.try_again), view -> {
+                    beginSession();
+                    snackbar.dismiss();
+                });
+                if(!snackbar.isShown())
+                    snackbar.show();
+            }
+        });
+    }
 
+    private void getAllChannels() {
+        ApiUtils.getServices().getChannels(sessionManager.getApiToken()).enqueue(new Callback<Channels>() {
+            @Override
+            public void onResponse(Call<Channels> call, retrofit2.Response<Channels> response) {
+                if(response.isSuccessful()){
+                    Channels channels = response.body();
+                    if(channels.getOk()){
+                        for(Channel channel : channels.getChannels()){
+                            SlackChat.getApp().getExecutor().execute(() ->
+                                    DatabaseClient.getInstance(ChatActivity.this).getAppDatabase().channelsDao().saveChannels(channel));
+                        }
+
+                    }
+                }else {
+                    snackbar = Snackbar.make(snackBarView,getString(R.string.fetching_channels_failed),Snackbar.LENGTH_INDEFINITE);
+                    snackbar.setAction(getString(R.string.retry), view -> {
+                        getAllChannels();
+                        snackbar.dismiss();
+                    });
+                    if(!snackbar.isShown())
+                        snackbar.show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Channels> call, Throwable t) {
+                snackbar = Snackbar.make(snackBarView,getString(R.string.something_went_wrong),Snackbar.LENGTH_INDEFINITE);
+                snackbar.setAction(getString(R.string.retry), view -> {
+                    getAllChannels();
+                    snackbar.dismiss();
+                });
+                if(!snackbar.isShown())
+                    snackbar.show();
+            }
+        });
+    }
+
+    private void getAllUsers() {
+        ApiUtils.getServices().getUsers(sessionManager.getApiToken()).enqueue(new Callback<Users>() {
+            @Override
+            public void onResponse(Call<Users> call, retrofit2.Response<Users> response) {
+                if(response.isSuccessful()){
+                    Users users = response.body();
+                    if(users.getOk()){
+                        for(Member member: users.getMembers()){
+                            SlackChat.getApp().getExecutor().execute(()->
+                                    DatabaseClient.getInstance(ChatActivity.this).getAppDatabase().userDao().saveUser(member));
+                        }
+                    }else {
+                        snackbar = Snackbar.make(snackBarView,getString(R.string.fetching_users_failed),Snackbar.LENGTH_INDEFINITE);
+                        snackbar.setAction(getString(R.string.retry), view -> {
+                            getAllUsers();
+                            snackbar.dismiss();
+                        });
+                        if(!snackbar.isShown())
+                            snackbar.show();
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Users> call, Throwable t) {
+                snackbar = Snackbar.make(snackBarView,getString(R.string.something_went_wrong),Snackbar.LENGTH_INDEFINITE);
+                snackbar.setAction(getString(R.string.retry), view -> {
+                    getAllUsers();
+                    snackbar.dismiss();
+                });
+                if(!snackbar.isShown())
+                    snackbar.show();
             }
         });
     }
@@ -103,6 +197,10 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
+    private View.OnClickListener sendButtonClickListener = view -> {
+
+    };
+
     @Override
     protected void onDestroy() {
         if(webSocket != null){
@@ -121,6 +219,5 @@ public class ChatActivity extends AppCompatActivity {
         } catch (JSONException e) {
             e.printStackTrace();
         }
-
     }
 }

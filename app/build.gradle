@@ -44,5 +44,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:3.10.0'
     //Retrofit Logging interceptor
     implementation 'com.squareup.okhttp3:logging-interceptor:3.10.0'
-    implementation 'org.jetbrains:annotations-java5:15.0'
+    // Room
+    implementation "android.arch.persistence.room:runtime:1.1.1"
+    annotationProcessor "android.arch.persistence.room:compiler:1.1.1"
 }

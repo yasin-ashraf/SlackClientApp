@@ -1,4 +1,9 @@
 <resources>
     <string name="app_name">SlackChat</string>
     <string name="noti_channel_notif_service">Slack chat notification</string>
+    <string name="something_went_wrong">Something went wrong, Please check your internet connection.</string>
+    <string name="try_again">Try again</string>
+    <string name="fetching_channels_failed">Fetching channels failed.</string>
+    <string name="retry">Retry</string>
+    <string name="fetching_users_failed">Fetching users failed.</string>
 </resources>

@@ -24,8 +24,7 @@
                 android:id="@+id/progressBar"
                 android:layout_width="30dp"
                 android:layout_height="30dp"
-                android:layout_centerInParent="true"
-                />
+                android:layout_centerInParent="true" />
 
             <ImageView
                 android:id="@+id/iv_slack_logo"
@@ -61,7 +60,15 @@
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/view"/>
 
+            <android.support.design.widget.CoordinatorLayout
+                android:id="@+id/snackBarView"
+                android:layout_width="match_parent"
+                android:layout_height="120dp"
+                android:layout_marginBottom="2dp"
+                android:layout_above="@id/ll_message"/>
+
             <LinearLayout
+                android:id="@+id/ll_message"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_alignParentBottom="true"
