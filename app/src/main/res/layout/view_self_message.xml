@@ -15,11 +15,10 @@
         android:orientation="horizontal">
 
         <de.hdodenhof.circleimageview.CircleImageView
-            android:layout_gravity="center"
+            android:layout_gravity="top"
             android:id="@+id/profile_image"
             android:layout_width="49dp"
             android:layout_height="49dp"
-            android:layout_marginTop="2dp"
             android:src="@drawable/john" />
 
         <TextView

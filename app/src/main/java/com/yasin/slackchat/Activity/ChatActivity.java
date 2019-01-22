@@ -10,10 +10,12 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.ViewFlipper;
 
+import com.google.gson.Gson;
 import com.yasin.slackchat.Adapter.ChannelsAdapter;
 import com.yasin.slackchat.Adapter.MessageAdapter;
 import com.yasin.slackchat.ApiUtils;
@@ -25,6 +27,7 @@ import com.yasin.slackchat.Model.Member;
 import com.yasin.slackchat.Model.Message;
 import com.yasin.slackchat.Model.RTMConnect;
 import com.yasin.slackchat.Model.Self;
+import com.yasin.slackchat.Model.SendMessage;
 import com.yasin.slackchat.Model.Users;
 import com.yasin.slackchat.R;
 import com.yasin.slackchat.SessionManager;
@@ -33,8 +36,8 @@ import com.yasin.slackchat.SlackChat;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -57,6 +60,10 @@ public class ChatActivity extends AppCompatActivity implements ChannelsAdapter.C
     private RecyclerView messageRecyclerView;
     private RecyclerView channelsRecyclerView;
     private MessageAdapter messageAdapter;
+    private EditText etMessageField;
+    private String currentChannelId;
+    private String currentmessageId;
+    private List<Message> messages;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,7 +81,9 @@ public class ChatActivity extends AppCompatActivity implements ChannelsAdapter.C
         snackBarView = findViewById(R.id.snackBarView);
         messageRecyclerView = findViewById(R.id.rv_chat);
         channelsRecyclerView = findViewById(R.id.rv_channels);
+        etMessageField = findViewById(R.id.et_message);
         messageRecyclerView.setLayoutManager(new LinearLayoutManager(this,LinearLayoutManager.VERTICAL,true));
+        messageRecyclerView.addOnLayoutChangeListener(onLayoutChangeListener);
         channelsRecyclerView.setLayoutManager(new LinearLayoutManager(this,LinearLayoutManager.HORIZONTAL,false));
 
         sendButton.setOnClickListener(sendButtonClickListener);
@@ -126,6 +135,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelsAdapter.C
 
                         }
                         getChannelHistory(channels.getChannels().get(0).getId());
+                        currentChannelId = channels.getChannels().get(0).getId();
                     }
                 }else {
                     snackbar = Snackbar.make(snackBarView,getString(R.string.fetching_channels_failed),Snackbar.LENGTH_INDEFINITE);
@@ -153,6 +163,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelsAdapter.C
 
     @Override
     public void onChannelSelected(String channelId) {
+        currentChannelId = channelId;
         getChannelHistory(channelId);
     }
 
@@ -199,15 +210,11 @@ public class ChatActivity extends AppCompatActivity implements ChannelsAdapter.C
             public void onResponse(Call<History> call, retrofit2.Response<History> response) {
                 if(response.isSuccessful()) {
                     History history = response.body();
-                    List<Message> messages = history.getMessages();
+                    messages = history.getMessages();
                     List<Member> members = DatabaseClient.getInstance(ChatActivity.this).getAppDatabase().userDao().getUsers();
                     if(messageAdapter == null){
                         messageAdapter = new MessageAdapter(messages,ChatActivity.this,members);
                         messageRecyclerView.setAdapter(messageAdapter);
-                        new Handler().postDelayed(()->{
-                            messageRecyclerView.scrollToPosition(0);
-                        },1000);
-
                     }else {
                         messageAdapter.setMessages(messages);
                         messageRecyclerView.setAdapter(messageAdapter);
@@ -218,10 +225,25 @@ public class ChatActivity extends AppCompatActivity implements ChannelsAdapter.C
 
             @Override
             public void onFailure(Call<History> call, Throwable t) {
-
+                snackbar = Snackbar.make(snackBarView,getString(R.string.something_went_wrong),Snackbar.LENGTH_INDEFINITE);
+                snackbar.setAction(getString(R.string.retry), view -> {
+                    getAllUsers();
+                    snackbar.dismiss();
+                });
+                if(!snackbar.isShown())
+                    snackbar.show();
             }
         });
     }
+
+    private RecyclerView.OnLayoutChangeListener onLayoutChangeListener = new View.OnLayoutChangeListener() {
+        @Override
+        public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+            if (bottom < oldBottom) {
+                messageRecyclerView.postDelayed(() -> messageRecyclerView.scrollToPosition(0), 100);
+            }
+        }
+    };
 
     private void startWebSocket(String webSocketUrl) {
         OkHttpClient client = new OkHttpClient();;
@@ -243,11 +265,13 @@ public class ChatActivity extends AppCompatActivity implements ChannelsAdapter.C
         public void onMessage(WebSocket webSocket, String text) {
             super.onMessage(webSocket, text);
             Log.d("WEBSOCKET",text);
+            onMessageReceived(text);
         }
 
         @Override
         public void onClosed(WebSocket webSocket, int code, String reason) {
             super.onClosed(webSocket, code, reason);
+            Log.d("WEBSOCKET","CLOSED : " + reason);
         }
 
         @Override
@@ -257,7 +281,24 @@ public class ChatActivity extends AppCompatActivity implements ChannelsAdapter.C
     }
 
     private View.OnClickListener sendButtonClickListener = view -> {
-
+        if(!etMessageField.getText().toString().isEmpty()){
+            Random random = new Random();
+            int id = random.nextInt(1000);
+            SendMessage sendMessage = new SendMessage();
+            sendMessage.setChannel(currentChannelId);
+            sendMessage.setType("message");
+            sendMessage.setText(etMessageField.getText().toString());
+            sendMessage.setId(id);
+            Gson gson = new Gson();
+            String jsonString = gson.toJson(sendMessage);
+            try {
+                JSONObject request = new JSONObject(jsonString);
+                webSocket.send(request.toString());
+                Log.d("MESSAGE",request.toString());
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
     };
 
     @Override
@@ -271,10 +312,38 @@ public class ChatActivity extends AppCompatActivity implements ChannelsAdapter.C
 
     private void onMessageReceived(String text) {
         JSONObject obj = null;
+        String type = "",channel = "",replyTo = "",textStr = "";
+        boolean ok = false;
         try {
             obj = new JSONObject(text);
-            String type = obj.getString("type");
-            String channel = obj.getString("channel");
+            if(obj.has("type")){
+                type = obj.getString("type");
+            }
+            if(obj.has("channel")){
+                channel = obj.getString("channel");
+            }
+            if(obj.has("reply_to")){
+                replyTo = obj.getString("reply_to");
+            }
+            if(obj.has("text")){
+                textStr = obj.getString("text");
+            }
+            if(obj.has("ok")){
+                ok = obj.getBoolean("ok");
+            }
+
+            if(replyTo != null && ok && etMessageField.getText().toString().trim().equals(textStr)){
+                Message message = new Message();
+                message.setType(type);
+                message.setUser(sessionManager.getSelfUserId());
+                message.setText(textStr);
+                messages.add(0,message);
+                messageAdapter.notifyDataSetChanged();
+
+                messageRecyclerView.scrollToPosition(0);
+                etMessageField.setText("");
+
+            }
 
         } catch (JSONException e) {
             e.printStackTrace();

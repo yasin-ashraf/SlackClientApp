@@ -6,4 +6,5 @@
     <string name="fetching_channels_failed">Fetching channels failed.</string>
     <string name="retry">Retry</string>
     <string name="fetching_users_failed">Fetching users failed.</string>
+    <string name="type_your_message_here">Type your message here</string>
 </resources>
