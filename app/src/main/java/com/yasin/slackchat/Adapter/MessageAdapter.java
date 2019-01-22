@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
+import com.yasin.slackchat.Model.Member;
 import com.yasin.slackchat.Model.Message;
 import com.yasin.slackchat.R;
 import com.yasin.slackchat.SessionManager;
@@ -23,12 +24,14 @@ import de.hdodenhof.circleimageview.CircleImageView;
 public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private List<Message> messages;
+    private List<Member> users;
     private Context context;
     private SessionManager sessionManager;
 
-    public MessageAdapter(List<Message> messages, Context context) {
+    public MessageAdapter(List<Message> messages, Context context, List<Member> members) {
         this.messages = messages;
         this.context = context;
+        this.users = members;
         this.sessionManager = new SessionManager(context);
     }
 
@@ -58,15 +61,30 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
         Message message = messages.get(i);
         String userId = message.getUser();
+        Member m = null;
+        for(Member member: users){
+            if(member.getId().equals(userId))
+                m = member;
+        }
         switch (viewHolder.getItemViewType()){
             case 0:
                 SelfMessageViewHolder selfMessageViewHolder = (SelfMessageViewHolder) viewHolder;
                 selfMessageViewHolder.textMessage.setText(message.getText());
+                if(m != null)
+                    Picasso.get()
+                        .load(m.getProfile().getImage32())
+                        .placeholder(R.drawable.john)
+                        .into(selfMessageViewHolder.profileImage);
                 break;
 
             case 1:
                 OtherMessageViewHolder otherMessageViewHolder = (OtherMessageViewHolder) viewHolder;
                 otherMessageViewHolder.textMessage.setText(message.getText());
+                if(m != null)
+                    Picasso.get()
+                        .load(m.getProfile().getImage32())
+                        .placeholder(R.drawable.jarvis)
+                        .into(otherMessageViewHolder.profileImage);
                 break;
 
             case 2:

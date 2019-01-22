@@ -1,6 +1,9 @@
 package com.yasin.slackchat.Adapter;
 
+import android.content.Context;
 import android.support.annotation.NonNull;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,9 +22,12 @@ public class ChannelsAdapter extends RecyclerView.Adapter<ChannelsAdapter.Channe
 
     private List<Channel> channels;
     private ChannelSelectedListener channelSelectedListener;
+    private int selectedPosition = 0;
+    private Context context;
 
-    public ChannelsAdapter(List<Channel> channels) {
+    public ChannelsAdapter(List<Channel> channels, Context context) {
         this.channels = channels;
+        this.context = context;
     }
 
     public void setChannelSelectedListener(ChannelSelectedListener channelSelectedListener) {
@@ -40,8 +46,17 @@ public class ChannelsAdapter extends RecyclerView.Adapter<ChannelsAdapter.Channe
         Channel channel = channels.get(i);
         channelViewHolder.channelName.setText(channel.getName());
 
+        if(selectedPosition == i){
+            channelViewHolder.channelCard.setCardBackgroundColor(ContextCompat.getColor(context,R.color.colorAccent));
+        }else {
+            channelViewHolder.channelCard.setCardBackgroundColor(ContextCompat.getColor(context,R.color.slackYellow));
+        }
+
         channelViewHolder.itemView.setOnClickListener(view -> {
             channelSelectedListener.onChannelSelected(channel.getId());
+            notifyItemChanged(selectedPosition);
+            selectedPosition = i;
+            notifyItemChanged(i);
         });
     }
 
@@ -53,10 +68,12 @@ public class ChannelsAdapter extends RecyclerView.Adapter<ChannelsAdapter.Channe
     class ChannelViewHolder extends RecyclerView.ViewHolder {
 
         private TextView channelName;
+        private CardView channelCard;
 
         ChannelViewHolder(@NonNull View itemView) {
             super(itemView);
             channelName = itemView.findViewById(R.id.tv_channel_name);
+            channelCard = itemView.findViewById(R.id.card_channel);
         }
     }
 

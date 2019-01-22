@@ -32,12 +32,12 @@
             android:paddingTop="13dp"
             android:paddingStart="15dp"
             android:paddingEnd="15dp"
+            android:fontFamily="@font/product_sans_regular"
             tools:text="Hey, thanks for the interest What would you like to know?"
-            android:textColor="#3b3b3b"
+            android:textColor="#ffffff"
             android:background="@drawable/rectangle_white_border"
             android:textSize="13sp"/>
 
     </LinearLayout>
-
 
 </LinearLayout>

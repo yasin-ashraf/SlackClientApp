@@ -1,6 +1,7 @@
 package com.yasin.slackchat.Activity;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
@@ -32,6 +33,7 @@ import com.yasin.slackchat.SlackChat;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import okhttp3.OkHttpClient;
@@ -115,7 +117,7 @@ public class ChatActivity extends AppCompatActivity implements ChannelsAdapter.C
                 if(response.isSuccessful()){
                     Channels channels = response.body();
                     if(channels.getOk()){
-                        ChannelsAdapter channelsAdapter = new ChannelsAdapter(channels.getChannels());
+                        ChannelsAdapter channelsAdapter = new ChannelsAdapter(channels.getChannels(),ChatActivity.this);
                         channelsAdapter.setChannelSelectedListener(ChatActivity.this);
                         channelsRecyclerView.setAdapter(channelsAdapter);
                         for(Channel channel : channels.getChannels()){
@@ -198,9 +200,14 @@ public class ChatActivity extends AppCompatActivity implements ChannelsAdapter.C
                 if(response.isSuccessful()) {
                     History history = response.body();
                     List<Message> messages = history.getMessages();
+                    List<Member> members = DatabaseClient.getInstance(ChatActivity.this).getAppDatabase().userDao().getUsers();
                     if(messageAdapter == null){
-                        messageAdapter = new MessageAdapter(messages,ChatActivity.this);
+                        messageAdapter = new MessageAdapter(messages,ChatActivity.this,members);
                         messageRecyclerView.setAdapter(messageAdapter);
+                        new Handler().postDelayed(()->{
+                            messageRecyclerView.scrollToPosition(0);
+                        },1000);
+
                     }else {
                         messageAdapter.setMessages(messages);
                         messageRecyclerView.setAdapter(messageAdapter);

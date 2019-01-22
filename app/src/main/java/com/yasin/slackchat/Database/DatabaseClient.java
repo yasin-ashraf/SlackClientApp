@@ -17,6 +17,7 @@ public class DatabaseClient {
         //creating the app database with Room database builder
         slackChatDatabase = Room.databaseBuilder(context,
                 SlackChatDatabase.class, "SlackChatDatabase.db")
+                .allowMainThreadQueries()
                 .build();
     }
 
